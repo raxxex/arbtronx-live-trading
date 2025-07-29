@@ -87,18 +87,25 @@ exchange_manager = None
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize the complete ARBTRONX trading system"""
+    """Start the dashboard immediately and initialize trading system in background"""
+    print("🚀 Starting ARBTRONX Live Dashboard...")
+    print("✅ Health endpoint ready - starting background initialization...")
+
+    # Start background initialization (non-blocking)
+    asyncio.create_task(initialize_trading_system())
+
+async def initialize_trading_system():
+    """Initialize the complete ARBTRONX trading system in background"""
     global binance_api, smart_engine, phase_system, grid_engine, exchange_manager
 
-    print("🚀 Starting ARBTRONX Live Dashboard...")
-    print("📊 Initializing Complete Trading System...")
-
     try:
+        print("📊 Initializing Complete Trading System...")
+
         # Initialize Enhanced Binance API
         api_key = os.getenv('BINANCE_API_KEY', '')
         secret_key = os.getenv('BINANCE_SECRET_KEY', '')
 
-        if api_key and secret_key:
+        if api_key and secret_key and BINANCE_API_AVAILABLE:
             print("🔗 Connecting to Binance API...")
             binance_api = EnhancedBinanceAPI(api_key, secret_key)
             await binance_api.initialize()
@@ -112,51 +119,30 @@ async def startup_event():
                     print(f"   {pair}: ${data['price']:.8f} ({data['change_24h']:+.2f}%)")
 
                 # Initialize Exchange Manager
-                print("🔧 Initializing Exchange Manager...")
-                exchange_manager = ExchangeManager()
-                await exchange_manager.initialize()
+                if EXCHANGE_MANAGER_AVAILABLE:
+                    print("🔧 Initializing Exchange Manager...")
+                    exchange_manager = ExchangeManager()
+                    await exchange_manager.initialize()
 
-                # Initialize Grid Trading Engine
-                print("🔲 Initializing Grid Trading Engine...")
-                if len(exchange_manager.exchanges) > 0:
-                    grid_engine = GridTradingEngine(exchange_manager)
-                else:
-                    # Fallback: Create a minimal exchange manager with working binance_api
-                    print("⚠️ Exchange manager failed, using direct Binance API for grid engine...")
-                    from src.exchanges.binance_exchange import BinanceExchange
+                    # Initialize Grid Trading Engine
+                    if GRID_ENGINE_AVAILABLE and len(exchange_manager.exchanges) > 0:
+                        print("🔲 Initializing Grid Trading Engine...")
+                        grid_engine = GridTradingEngine(exchange_manager)
+                        print("✅ Grid Trading Engine initialized!")
 
-                    # Create a working Binance exchange instance
-                    binance_exchange = BinanceExchange()
-                    await binance_exchange.connect({
-                        'apiKey': api_key,
-                        'secret': secret_key,
-                        'sandbox': False
-                    })
+                    # Initialize Smart Trading Engine
+                    if SMART_ENGINE_AVAILABLE:
+                        print("🧠 Initializing Smart Trading Engine...")
+                        smart_engine = initialize_smart_trading_engine(binance_api)
+                        await smart_engine.initialize()
+                        print("✅ Smart Trading Engine initialized!")
 
-                    # Add it to exchange manager
-                    exchange_manager.exchanges['binance'] = binance_exchange
-                    grid_engine = GridTradingEngine(exchange_manager)
-
-                # Initialize Smart Trading Engine
-                print("🧠 Initializing Smart Trading Engine...")
-                smart_engine = initialize_smart_trading_engine(binance_api)
-                await smart_engine.initialize()
-                print("✅ Smart Trading Engine initialized!")
-                print("   🎯 Smart Entry: Volume spike + RSI divergence detection")
-                print("   🔄 Auto Switch: Volatility-based pair switching")
-                print("   🛡️ Loss Cut: Breakout protection active")
-                print("   💰 Cycle Discipline: 100% profit reinvestment")
-
-                # Initialize Phase-Based Trading System
-                print("🎯 Initializing Phase-Based Trading System...")
-                phase_system = initialize_phase_trading_system(smart_engine)
-                await phase_system.initialize()
-                print("✅ Phase-Based Trading System initialized!")
-                print("   📊 Phase 1: $200 → $1,000 (8 cycles @ 25% ROI)")
-                print("   📈 Phase 2: $1,000 → $5,000 (8 cycles @ 25% ROI)")
-                print("   🚀 Phase 3: $5,000 → $20,000 (6 cycles @ 25% ROI)")
-                print("   🏆 Phase 4: $20,000 → $100,000 (6 cycles @ 20% ROI)")
-                print("   ⏱️  Target Duration: 2-4 months (28 total cycles)")
+                    # Initialize Phase-Based Trading System
+                    if PHASE_SYSTEM_AVAILABLE and smart_engine:
+                        print("🎯 Initializing Phase-Based Trading System...")
+                        phase_system = initialize_phase_trading_system(smart_engine)
+                        await phase_system.initialize()
+                        print("✅ Phase-Based Trading System initialized!")
 
                 print("✅ ARBTRONX Complete Trading System Ready!")
 
@@ -164,7 +150,7 @@ async def startup_event():
                 print("⚠️ Binance API connection failed, using demo mode")
                 binance_api = None
         else:
-            print("⚠️ No API keys found, using demo mode")
+            print("⚠️ No API keys found or modules unavailable, using demo mode")
             binance_api = None
 
     except Exception as e:
