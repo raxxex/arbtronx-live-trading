@@ -49,6 +49,23 @@ git push -u origin main
 - Health check endpoint: `/health`
 - Logs available in Railway dashboard
 
+## 🔧 Troubleshooting
+
+### If you get build errors:
+1. Try using the minimal requirements:
+   ```bash
+   cp requirements-minimal.txt requirements.txt
+   git add . && git commit -m "Use minimal requirements"
+   git push
+   ```
+
+2. Or set Python version in Railway:
+   - Go to Settings → Environment
+   - Add: `PYTHON_VERSION=3.9.18`
+
+### Alternative: Use Dockerfile
+Railway can also build using the included Dockerfile for more control.
+
 ## 💰 Pricing
 - Free tier: Limited hours
 - Hobby plan: $5/month (recommended)
