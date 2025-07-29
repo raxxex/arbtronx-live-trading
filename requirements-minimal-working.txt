@@ -1,0 +1,7 @@
+# ARBTRONX - Minimal working version for cloud deployment
+fastapi==0.100.0
+uvicorn==0.23.0
+python-dotenv==1.0.0
+requests==2.31.0
+aiohttp==3.8.5
+loguru==0.7.0

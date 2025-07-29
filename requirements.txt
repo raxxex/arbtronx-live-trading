@@ -1,4 +1,10 @@
 # ARBTRONX Live Trading Dashboard - Render Compatible
+# Build dependencies first
+setuptools>=65.0.0
+wheel>=0.38.0
+pip>=22.0.0
+
+# Core dependencies
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
 gunicorn==21.2.0
