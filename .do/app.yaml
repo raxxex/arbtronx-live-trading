@@ -1,0 +1,26 @@
+name: arbtronx-live-trading
+services:
+- name: web
+  source_dir: /
+  github:
+    repo: raxxex/arbtronx-live-trading
+    branch: main
+  run_command: uvicorn live_dashboard:app --host 0.0.0.0 --port $PORT
+  environment_slug: python
+  instance_count: 1
+  instance_size_slug: basic-xxs
+  health_check:
+    http_path: /health
+  envs:
+  - key: BINANCE_API_KEY
+    value: ZETdLJmOxVNd6JqoCP5eGOUagRlv68yKcyW8ouaxVmBg9yIeflakSXoCXNm2LLDt
+  - key: BINANCE_SECRET_KEY
+    value: ax9aDcjPZEzpIVMLapUnZRqjt8CJlcPBDO2X9LGJp3uPC2lmXBO5McUj0mHIUhQb
+  - key: BINANCE_SANDBOX
+    value: "false"
+  - key: USER_NAME
+    value: "Ibrahim Razzan"
+  - key: USER_EMAIL
+    value: "raxxex@gmail.com"
+  - key: USER_ID
+    value: "76bfd673"

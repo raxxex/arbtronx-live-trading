@@ -1,14 +1,13 @@
 {
-  "builds": [
-    {
-      "src": "live_dashboard.py",
-      "use": "@vercel/python"
+  "functions": {
+    "live_dashboard.py": {
+      "runtime": "@vercel/python"
     }
-  ],
+  },
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "live_dashboard.py"
+      "dest": "/live_dashboard.py"
     }
   ],
   "env": {

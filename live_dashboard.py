@@ -4303,9 +4303,14 @@ async def stop_all_grids():
             "timestamp": time.time()
         }
 
+# Vercel serverless handler
+def handler(request, response):
+    """Vercel serverless function handler"""
+    return app
+
 if __name__ == "__main__":
     import os
-    port = int(os.environ.get("PORT", 8000))  # Railway recommended default
+    port = int(os.environ.get("PORT", 8000))
     print("🚀 Starting ARBTRONX Live Trading Dashboard...")
     print("📱 Mobile-responsive interface ready")
     print("💰 Live trading with real funds enabled")
