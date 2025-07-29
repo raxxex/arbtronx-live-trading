@@ -1,0 +1,6 @@
+# Ultra minimal requirements - only absolute essentials
+fastapi
+uvicorn[standard]
+python-dotenv
+ccxt
+loguru
