@@ -1,0 +1,22 @@
+{
+  "builds": [
+    {
+      "src": "live_dashboard.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "live_dashboard.py"
+    }
+  ],
+  "env": {
+    "BINANCE_API_KEY": "ZETdLJmOxVNd6JqoCP5eGOUagRlv68yKcyW8ouaxVmBg9yIeflakSXoCXNm2LLDt",
+    "BINANCE_SECRET_KEY": "ax9aDcjPZEzpIVMLapUnZRqjt8CJlcPBDO2X9LGJp3uPC2lmXBO5McUj0mHIUhQb",
+    "BINANCE_SANDBOX": "false",
+    "USER_NAME": "Ibrahim Razzan",
+    "USER_EMAIL": "raxxex@gmail.com",
+    "USER_ID": "76bfd673"
+  }
+}
