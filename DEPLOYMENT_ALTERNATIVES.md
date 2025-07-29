@@ -17,10 +17,15 @@ Since Railway health checks are failing, here are proven alternatives:
 3. **Connect your GitHub repo**: `arbtronx-live-trading`
 4. **Settings:**
    - **Environment**: `Python 3`
-   - **Build Command**: `pip install -r requirements.txt`
-   - **Start Command**: `uvicorn live_dashboard:app --host 0.0.0.0 --port $PORT`
+   - **Build Command**: `pip install --upgrade pip && pip install --only-binary=all -r requirements.txt`
+   - **Start Command**: `uvicorn live_dashboard:app --host 0.0.0.0 --port $PORT --workers 1`
 5. **Add Environment Variables** (same as Railway)
 6. **Deploy!**
+
+### If Render Build Fails:
+- **Try stable versions**: Change requirements.txt to requirements-stable.txt
+- **Use build script**: Set Build Command to `./build.sh`
+- **Check logs**: Look for specific package compilation errors
 
 ## 🎯 Option 2: Vercel (Serverless)
 

@@ -1,0 +1,13 @@
+# ARBTRONX - Most stable versions for cloud deployment
+fastapi==0.100.0
+uvicorn==0.23.0
+gunicorn==20.1.0
+python-dotenv==1.0.0
+pydantic==1.10.12
+aiohttp==3.8.5
+websockets==11.0.2
+ccxt==4.0.104
+pandas==1.5.3
+numpy==1.24.3
+loguru==0.7.0
+python-dateutil==2.8.2
