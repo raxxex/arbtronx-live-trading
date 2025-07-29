@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="400" height="400" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- ARBTRONX Logo -->
+  <defs>
+    <linearGradient id="chartGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#00BCD4;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4CAF50;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Chart Line with Circles -->
+  <g transform="translate(50, 150)">
+    <!-- Left Circle -->
+    <circle cx="50" cy="100" r="25" fill="none" stroke="#00BCD4" stroke-width="12"/>
+    
+    <!-- Chart Line -->
+    <path d="M 75 100 L 150 50 L 225 25" fill="none" stroke="url(#chartGradient)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+    
+    <!-- Right Circle -->
+    <circle cx="250" cy="25" r="25" fill="none" stroke="#4CAF50" stroke-width="12"/>
+  </g>
+  
+  <!-- ARBTRONX Text -->
+  <text x="200" y="320" font-family="Arial, sans-serif" font-size="48" font-weight="300" text-anchor="middle" fill="#E0E0E0" letter-spacing="8px">ARBTRONX</text>
+</svg>

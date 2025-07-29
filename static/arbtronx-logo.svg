@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- ARBTRONX Logo -->
+  <defs>
+    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00D4FF;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#00B4D8;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4ECDC4;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Chart line with circles -->
+  <g transform="translate(50, 80)">
+    <!-- First circle (blue) -->
+    <circle cx="0" cy="40" r="15" fill="#00B4D8" stroke="white" stroke-width="3"/>
+    <circle cx="0" cy="40" r="8" fill="white"/>
+    
+    <!-- Line segment 1 (up) -->
+    <path d="M 15 40 L 35 20" stroke="url(#logoGradient)" stroke-width="6" stroke-linecap="round"/>
+    
+    <!-- Peak point -->
+    <circle cx="50" cy="10" r="12" fill="#4ECDC4" stroke="white" stroke-width="3"/>
+    <circle cx="50" cy="10" r="6" fill="white"/>
+    
+    <!-- Line segment 2 (down) -->
+    <path d="M 62 18 L 75 35" stroke="url(#logoGradient)" stroke-width="6" stroke-linecap="round"/>
+    
+    <!-- Line segment 3 (up) -->
+    <path d="M 75 35 L 85 15" stroke="url(#logoGradient)" stroke-width="6" stroke-linecap="round"/>
+    
+    <!-- Final circle (green) -->
+    <circle cx="100" cy="0" r="15" fill="#4ECDC4" stroke="white" stroke-width="3"/>
+    <circle cx="100" cy="0" r="8" fill="white"/>
+  </g>
+  
+  <!-- ARBTRONX Text -->
+  <text x="100" y="160" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#E2E8F0" opacity="0.8">ARBTRONX</text>
+</svg>
