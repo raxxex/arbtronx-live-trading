@@ -9,16 +9,53 @@ import time
 import logging
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
-from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
-from src.enhanced_binance_api import EnhancedBinanceAPI
-from src.smart_trading_engine import initialize_smart_trading_engine
-from src.phase_based_trading import initialize_phase_trading_system
-from src.strategies.grid_trading_engine import GridTradingEngine
-from src.exchanges.exchange_manager import ExchangeManager
 import os
 from dotenv import load_dotenv
+
+# Try to import custom modules with fallback
+try:
+    from src.enhanced_binance_api import EnhancedBinanceAPI
+    BINANCE_API_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Could not import EnhancedBinanceAPI: {e}")
+    BINANCE_API_AVAILABLE = False
+
+try:
+    from src.smart_trading_engine import initialize_smart_trading_engine
+    SMART_ENGINE_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Could not import smart_trading_engine: {e}")
+    SMART_ENGINE_AVAILABLE = False
+
+try:
+    from src.phase_based_trading import initialize_phase_trading_system
+    PHASE_SYSTEM_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Could not import phase_based_trading: {e}")
+    PHASE_SYSTEM_AVAILABLE = False
+
+try:
+    from src.strategies.grid_trading_engine import GridTradingEngine
+    GRID_ENGINE_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Could not import GridTradingEngine: {e}")
+    GRID_ENGINE_AVAILABLE = False
+
+try:
+    from src.exchanges.exchange_manager import ExchangeManager
+    EXCHANGE_MANAGER_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Could not import ExchangeManager: {e}")
+    EXCHANGE_MANAGER_AVAILABLE = False
+
+# Try to mount static files if directory exists
+try:
+    from fastapi.staticfiles import StaticFiles
+    STATIC_FILES_AVAILABLE = True
+except ImportError:
+    STATIC_FILES_AVAILABLE = False
 
 # Load environment variables
 load_dotenv()
@@ -37,8 +74,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount static files for logo and assets
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# Mount static files for logo and assets (if available)
+if STATIC_FILES_AVAILABLE and os.path.exists("static"):
+    app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Global variables
 binance_api = None
