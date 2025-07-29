@@ -211,8 +211,14 @@ async def dashboard():
     
     return html_content
 
+# Add root endpoint as backup health check
+@app.get("/")
+async def read_root():
+    """Root endpoint for Railway health check"""
+    return {"status": "ok", "service": "ARBTRONX", "message": "Dashboard is running"}
+
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8006))
+    port = int(os.environ.get("PORT", 8000))  # Default to 8000 as recommended
     print("🚀 Starting ARBTRONX Minimal Dashboard...")
     print(f"🌐 Will be available at: http://0.0.0.0:{port}")
     print("✅ Guaranteed to work on Railway!")

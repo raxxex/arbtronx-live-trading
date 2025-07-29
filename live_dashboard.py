@@ -87,12 +87,19 @@ exchange_manager = None
 
 @app.on_event("startup")
 async def startup_event():
-    """Start the dashboard immediately and initialize trading system in background"""
+    """Start the dashboard immediately - Railway health check ready"""
     print("🚀 Starting ARBTRONX Live Dashboard...")
-    print("✅ Health endpoint ready - starting background initialization...")
+    print("✅ Health endpoints ready at /health and /status")
+    print("📊 Dashboard available immediately")
+    print("🔄 Trading system will initialize in background...")
 
-    # Start background initialization (non-blocking)
-    asyncio.create_task(initialize_trading_system())
+    # Start background initialization (non-blocking) - don't wait for this
+    try:
+        asyncio.create_task(initialize_trading_system())
+    except Exception as e:
+        print(f"⚠️ Background initialization will retry: {e}")
+
+    print("✅ ARBTRONX Dashboard startup complete - ready for Railway health check!")
 
 async def initialize_trading_system():
     """Initialize the complete ARBTRONX trading system in background"""
@@ -442,8 +449,14 @@ async def health_check():
         "status": "healthy",
         "service": "ARBTRONX Live Trading Dashboard",
         "version": "1.0.0",
-        "api_connected": binance_api is not None
+        "api_connected": binance_api is not None,
+        "timestamp": time.time()
     }
+
+@app.get("/status")
+async def status_check():
+    """Backup health check endpoint"""
+    return {"status": "ok", "service": "ARBTRONX", "message": "Dashboard is running"}
 
 @app.get("/")
 async def dashboard():
@@ -4292,7 +4305,7 @@ async def stop_all_grids():
 
 if __name__ == "__main__":
     import os
-    port = int(os.environ.get("PORT", 8006))
+    port = int(os.environ.get("PORT", 8000))  # Railway recommended default
     print("🚀 Starting ARBTRONX Live Trading Dashboard...")
     print("📱 Mobile-responsive interface ready")
     print("💰 Live trading with real funds enabled")

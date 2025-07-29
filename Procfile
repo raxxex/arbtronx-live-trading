@@ -1,1 +1,1 @@
-web: uvicorn minimal_dashboard:app --host 0.0.0.0 --port $PORT
+web: uvicorn live_dashboard:app --host 0.0.0.0 --port $PORT
