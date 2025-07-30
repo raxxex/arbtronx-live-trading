@@ -7,6 +7,7 @@ Implements advanced features: Smart Entry, Auto Switch, Loss Cut, Cycle Discipli
 import asyncio
 import numpy as np
 import pandas as pd
+from collections import deque
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -79,9 +80,9 @@ class SmartTradingEngine:
         self.min_cycle_duration = 1800  # 30 minutes minimum
         self.reinvest_percentage = 1.0  # 100% reinvestment
         
-        # Historical data for analysis
-        self.price_history: Dict[str, List[float]] = {}
-        self.volume_history: Dict[str, List[float]] = {}
+        # Historical data for analysis with efficient data structures
+        self.price_history: Dict[str, deque] = {}
+        self.volume_history: Dict[str, deque] = {}
         
     async def initialize(self):
         """Initialize the smart trading engine"""
@@ -129,22 +130,15 @@ class SmartTradingEngine:
     async def _analyze_pair(self, symbol: str, data: Dict):
         """Analyze individual pair for smart entry signals"""
         try:
-            # Update price history
+            # Update price history efficiently
             if symbol not in self.price_history:
-                self.price_history[symbol] = []
+                self.price_history[symbol] = deque(maxlen=100)
             self.price_history[symbol].append(data['price'])
             
-            # Keep only last 100 data points
-            if len(self.price_history[symbol]) > 100:
-                self.price_history[symbol] = self.price_history[symbol][-100:]
-            
-            # Update volume history
+            # Update volume history efficiently
             if symbol not in self.volume_history:
-                self.volume_history[symbol] = []
+                self.volume_history[symbol] = deque(maxlen=100)
             self.volume_history[symbol].append(data['volume_24h'])
-            
-            if len(self.volume_history[symbol]) > 100:
-                self.volume_history[symbol] = self.volume_history[symbol][-100:]
             
             # Calculate metrics
             metrics = await self._calculate_metrics(symbol, data)
@@ -208,7 +202,7 @@ class SmartTradingEngine:
             if symbol not in self.price_history or len(self.price_history[symbol]) < period + 1:
                 return 50.0  # Neutral RSI
             
-            prices = np.array(self.price_history[symbol][-period-1:])
+            prices = np.array(list(self.price_history[symbol])[-period-1:])
             deltas = np.diff(prices)
             
             gains = np.where(deltas > 0, deltas, 0)
@@ -236,7 +230,7 @@ class SmartTradingEngine:
                 return 1.0
             
             current_volume = self.volume_history[symbol][-1]
-            avg_volume = np.mean(self.volume_history[symbol][-10:-1])
+            avg_volume = np.mean(list(self.volume_history[symbol])[-10:-1])
             
             if avg_volume == 0:
                 return 1.0
@@ -254,7 +248,7 @@ class SmartTradingEngine:
                 return False
             
             # Simple divergence check: price making lower lows while RSI making higher lows
-            prices = self.price_history[symbol][-20:]
+            prices = list(self.price_history[symbol])[-20:]
             
             # Calculate RSI for recent periods
             rsi_values = []
@@ -292,12 +286,12 @@ class SmartTradingEngine:
             if symbol not in self.price_history or len(self.price_history[symbol]) < 20:
                 return 5.0
             
-            prices = np.array(self.price_history[symbol][-20:])
+            prices = np.array(list(self.price_history[symbol])[-20:])
             returns = np.diff(prices) / prices[:-1]
             volatility = np.std(returns) * 100  # Convert to percentage
             
             # Scale to 0-10 score
-            score = min(volatility * 100, 10.0)
+            score = min(float(volatility * 100), 10.0)
             return float(score)
             
         except Exception as e:
@@ -486,14 +480,14 @@ class SmartTradingEngine:
                 if not grid.active:
                     continue
                 
-                current_volatility = self.market_metrics.get(symbol, {}).volatility_score if symbol in self.market_metrics else 0
+                current_volatility = self.market_metrics[symbol].volatility_score if symbol in self.market_metrics else 0
                 
                 # Check if there's a much better pair available
                 for top_symbol in top_volatile:
                     if top_symbol == symbol:
                         continue
                     
-                    top_volatility = self.market_metrics.get(top_symbol, {}).volatility_score if top_symbol in self.market_metrics else 0
+                    top_volatility = self.market_metrics[top_symbol].volatility_score if top_symbol in self.market_metrics else 0
                     
                     # Switch if new pair has 50% higher volatility and current grid is underperforming
                     if (top_volatility > current_volatility * 1.5 and 
