@@ -11,6 +11,7 @@ import json
 import hmac
 import hashlib
 import time
+from collections import deque
 from urllib.parse import urlencode
 from typing import Dict, Any, Optional, Callable, List
 from dataclasses import dataclass
@@ -78,9 +79,9 @@ class EnhancedBinanceAPI:
         self.price_callbacks: List[Callable] = []
         self.balance_callbacks: List[Callable] = []
         
-        # Rate limiting
-        self.request_times: List[float] = []
+        # Rate limiting with efficient data structure
         self.max_requests_per_minute = 1200  # Binance limit
+        self.request_times = deque(maxlen=self.max_requests_per_minute)
         
         # Retry configuration
         self.max_retries = 3
@@ -136,8 +137,9 @@ class EnhancedBinanceAPI:
     def _check_rate_limit(self) -> bool:
         """Check if we're within rate limits"""
         now = time.time()
-        # Remove requests older than 1 minute
-        self.request_times = [t for t in self.request_times if now - t < 60]
+        
+        while self.request_times and now - self.request_times[0] >= 60:
+            self.request_times.popleft()
         
         if len(self.request_times) >= self.max_requests_per_minute:
             return False

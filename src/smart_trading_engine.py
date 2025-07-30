@@ -7,6 +7,7 @@ Implements advanced features: Smart Entry, Auto Switch, Loss Cut, Cycle Discipli
 import asyncio
 import numpy as np
 import pandas as pd
+from collections import deque
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -79,9 +80,9 @@ class SmartTradingEngine:
         self.min_cycle_duration = 1800  # 30 minutes minimum
         self.reinvest_percentage = 1.0  # 100% reinvestment
         
-        # Historical data for analysis
-        self.price_history: Dict[str, List[float]] = {}
-        self.volume_history: Dict[str, List[float]] = {}
+        # Historical data for analysis with efficient data structures
+        self.price_history: Dict[str, deque] = {}
+        self.volume_history: Dict[str, deque] = {}
         
     async def initialize(self):
         """Initialize the smart trading engine"""
@@ -129,22 +130,15 @@ class SmartTradingEngine:
     async def _analyze_pair(self, symbol: str, data: Dict):
         """Analyze individual pair for smart entry signals"""
         try:
-            # Update price history
+            # Update price history efficiently
             if symbol not in self.price_history:
-                self.price_history[symbol] = []
+                self.price_history[symbol] = deque(maxlen=100)
             self.price_history[symbol].append(data['price'])
             
-            # Keep only last 100 data points
-            if len(self.price_history[symbol]) > 100:
-                self.price_history[symbol] = self.price_history[symbol][-100:]
-            
-            # Update volume history
+            # Update volume history efficiently
             if symbol not in self.volume_history:
-                self.volume_history[symbol] = []
+                self.volume_history[symbol] = deque(maxlen=100)
             self.volume_history[symbol].append(data['volume_24h'])
-            
-            if len(self.volume_history[symbol]) > 100:
-                self.volume_history[symbol] = self.volume_history[symbol][-100:]
             
             # Calculate metrics
             metrics = await self._calculate_metrics(symbol, data)
