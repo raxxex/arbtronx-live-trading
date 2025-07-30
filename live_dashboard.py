@@ -375,16 +375,22 @@ USER_ID=pwa_user
 
             # Initialize Binance API wrapper
             from src.exchanges.binance_exchange import BinanceExchange
-            binance_api = BinanceExchange()
+            credentials = {
+                'apiKey': api_key,
+                'secret': secret_key,
+                'sandbox': False
+            }
+            binance_api = BinanceExchange(credentials)
             await binance_api.connect()
 
-            # Initialize Grid Engine with new credentials
+            # Initialize Exchange Manager
+            from src.exchanges.exchange_manager import ExchangeManager
+            exchange_manager = ExchangeManager()
+            await exchange_manager.initialize()
+
+            # Initialize Grid Engine with exchange manager
             from src.strategies.grid_trading_engine import GridTradingEngine
-            grid_engine = GridTradingEngine(
-                exchange=test_exchange,
-                api_key=api_key,
-                secret_key=secret_key
-            )
+            grid_engine = GridTradingEngine(exchange_manager)
 
             return {
                 "success": True,
@@ -419,17 +425,40 @@ async def get_real_balances():
         if not binance_api:
             return {"success": False, "error": "Binance API not connected"}
 
-        # Get account balance
-        balance = binance_api.fetch_balance()
+        # Get account balance using correct method
+        if hasattr(binance_api, 'get_formatted_balances'):
+            balance_result = await binance_api.get_formatted_balances()
+            if not balance_result.get('success'):
+                return {"success": False, "error": "Failed to fetch balances"}
+            balance = balance_result.get('balances', {})
+        else:
+            balance_result = await binance_api.get_balance()
+            if not balance_result:
+                return {"success": False, "error": "Failed to fetch balances"}
+            balance = balance_result
 
         # Format balances for display
         balances = {}
-        for currency, data in balance.items():
-            if currency in ['USDT', 'BTC', 'ETH', 'BNB'] and data.get('total', 0) > 0:
+        for currency, balance_info in balance.items():
+            if isinstance(balance_info, dict):
+                free = balance_info.get('free', 0)
+                used = balance_info.get('used', 0)
+                total = balance_info.get('total', 0)
+            else:
+                try:
+                    free = float(balance_info.total) if hasattr(balance_info, 'total') else 0
+                    used = 0
+                    total = float(balance_info.total) if hasattr(balance_info, 'total') else 0
+                except:
+                    free = 0
+                    used = 0
+                    total = 0
+            
+            if currency in ['USDT', 'BTC', 'ETH', 'BNB'] and float(total) > 0:
                 balances[currency] = {
-                    'free': data.get('free', 0),
-                    'used': data.get('used', 0),
-                    'total': data.get('total', 0)
+                    'free': free,
+                    'used': used,
+                    'total': total
                 }
 
         return {
@@ -3389,7 +3418,10 @@ async def get_live_data():
             }
 
         # Get REAL market data from Binance
-        market_result = await binance_api.get_formatted_market_data()
+        if hasattr(binance_api, 'get_formatted_market_data'):
+            market_result = await binance_api.get_formatted_market_data()
+        else:
+            market_result = {"success": False, "error": "Method not available"}
         if not market_result.get('success'):
             return {
                 "success": False,
@@ -3399,7 +3431,10 @@ async def get_live_data():
             }
 
         # Get REAL account balances from Binance
-        balance_result = await binance_api.get_formatted_balances()
+        if hasattr(binance_api, 'get_formatted_balances'):
+            balance_result = await binance_api.get_formatted_balances()
+        else:
+            balance_result = {"success": False, "error": "Method not available"}
         if not balance_result.get('success'):
             return {
                 "success": False,
@@ -3448,7 +3483,10 @@ async def test_connection():
     try:
         if binance_api:
             # Test with a simple market data call
-            result = await binance_api.get_formatted_market_data()
+            if hasattr(binance_api, 'get_formatted_market_data'):
+                result = await binance_api.get_formatted_market_data()
+            else:
+                result = {"success": False, "error": "Method not available"}
             return {
                 "success": result.get('success', False),
                 "message": "Connection test successful" if result.get('success') else "Connection test failed",
@@ -3474,7 +3512,10 @@ async def get_balances():
 
     try:
         if binance_api:
-            result = await binance_api.get_formatted_balances()
+            if hasattr(binance_api, 'get_formatted_balances'):
+                result = await binance_api.get_formatted_balances()
+            else:
+                result = {"success": False, "error": "Method not available"}
             return {
                 "success": result.get('success', False),
                 "balances": result.get('balances', {}),
@@ -3514,7 +3555,10 @@ async def get_phase_status():
 
         # Update phase system with real balance before getting status
         if binance_api:
-            balance_result = await binance_api.get_formatted_balances()
+            if hasattr(binance_api, 'get_formatted_balances'):
+                balance_result = await binance_api.get_formatted_balances()
+            else:
+                balance_result = {"success": False, "error": "Method not available"}
             if balance_result.get('success'):
                 real_balance = balance_result.get('total_usdt_value', 0)
                 if real_balance > 0:
@@ -3662,7 +3706,10 @@ async def create_grid(request: Request):
             }
 
         # Check account balance first
-        balance_result = await binance_api.get_formatted_balances()
+        if hasattr(binance_api, 'get_formatted_balances'):
+            balance_result = await binance_api.get_formatted_balances()
+        else:
+            balance_result = {"success": False, "error": "Method not available"}
         if not balance_result.get('success'):
             return {
                 "success": False,
@@ -4208,7 +4255,10 @@ async def trigger_auto_compound():
             }
 
         # Get current balance
-        balance_result = await binance_api.get_formatted_balances()
+        if hasattr(binance_api, 'get_formatted_balances'):
+            balance_result = await binance_api.get_formatted_balances()
+        else:
+            balance_result = {"success": False, "error": "Method not available"}
         if not balance_result.get('success'):
             return {
                 "success": False,

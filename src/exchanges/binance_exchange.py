@@ -4,7 +4,7 @@ Binance Exchange Implementation
 import asyncio
 import json
 import time
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 import ccxt.async_support as ccxt
 import websockets
 from loguru import logger
@@ -142,7 +142,7 @@ class BinanceExchange(BaseExchange):
             logger.error(f"Error fetching order book for {symbol} from {self.name}: {e}")
             return None
     
-    async def get_balance(self, currency: str = None) -> Dict[str, Balance]:
+    async def get_balance(self, currency: Optional[str] = None) -> Dict[str, Balance]:
         """Get account balance(s)"""
         try:
             if not self.ccxt_exchange:
@@ -166,13 +166,83 @@ class BinanceExchange(BaseExchange):
                     self.update_balance(balance)
             
             if currency:
-                return {currency: balances.get(currency)} if currency in balances else {}
+                balance_obj = balances.get(currency)
+                return {currency: balance_obj} if balance_obj else {}
             
             return balances
             
         except Exception as e:
             logger.error(f"Error fetching balance from {self.name}: {e}")
             return {}
+
+    async def get_formatted_balances(self) -> Dict[str, Any]:
+        """Get formatted account balances with USDT values - compatibility method"""
+        try:
+            balances = await self.get_balance()
+            formatted_balances = {}
+            total_usdt_value = 0.0
+            
+            for currency, balance in balances.items():
+                if isinstance(balance, Balance) and balance.total > 0:
+                    usdt_value = balance.total
+                    if currency != 'USDT':
+                        try:
+                            ticker = await self.get_24h_ticker(f"{currency}/USDT")
+                            price = ticker.get('last', 0) or ticker.get('close', 0)
+                            usdt_value = balance.total * price
+                        except:
+                            usdt_value = 0
+                    
+                    formatted_balances[currency] = {
+                        'free': balance.free,
+                        'used': balance.used,
+                        'total': balance.total,
+                        'usdt_value': usdt_value
+                    }
+                    total_usdt_value += usdt_value
+            
+            return {
+                "success": True,
+                "balances": formatted_balances,
+                "total_usdt_value": total_usdt_value
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting formatted balances: {e}")
+            return {"success": False, "error": str(e)}
+
+    async def get_formatted_market_data(self) -> Dict[str, Any]:
+        """Get formatted market data for multiple symbols - compatibility method"""
+        try:
+            symbols = ['BTC/USDT', 'ETH/USDT', 'BNB/USDT', 'ADA/USDT', 'DOT/USDT']
+            market_data = {}
+            
+            for symbol in symbols:
+                try:
+                    ticker = await self.get_24h_ticker(symbol)
+                    if ticker:
+                        market_data[symbol.replace('/', '')] = {
+                            'symbol': symbol.replace('/', ''),
+                            'price': ticker.get('last', 0) or ticker.get('close', 0),
+                            'change': ticker.get('change', 0),
+                            'change_percent': ticker.get('percentage', 0),
+                            'volume': ticker.get('baseVolume', 0),
+                            'high': ticker.get('high', 0),
+                            'low': ticker.get('low', 0)
+                        }
+                except Exception as e:
+                    logger.warning(f"Failed to get data for {symbol}: {e}")
+                    continue
+            
+            return {
+                "success": True,
+                "market_data": market_data,
+                "timestamp": time.time()
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting formatted market data: {e}")
+            return {"success": False, "error": str(e)}
     
     async def place_market_order(self, symbol: str, side: str, amount: float) -> Trade:
         """Place a market order"""
@@ -190,7 +260,8 @@ class BinanceExchange(BaseExchange):
                 price=order.get('price', 0),
                 fee=order.get('fee', {}).get('cost', 0),
                 timestamp=order.get('timestamp', int(time.time() * 1000)),
-                status=order.get('status', 'unknown')
+                status=order.get('status', 'unknown'),
+                cost=amount * order.get('price', 0)
             )
             
         except Exception as e:
@@ -213,7 +284,8 @@ class BinanceExchange(BaseExchange):
                 price=price,
                 fee=order.get('fee', {}).get('cost', 0),
                 timestamp=order.get('timestamp', int(time.time() * 1000)),
-                status=order.get('status', 'unknown')
+                status=order.get('status', 'unknown'),
+                cost=amount * price
             )
             
         except Exception as e:
@@ -333,8 +405,8 @@ class BinanceExchange(BaseExchange):
                     
                     order_book = OrderBook(
                         symbol=symbol,
-                        bids=[[float(bid[0]), float(bid[1])] for bid in message_data.get('bids', [])],
-                        asks=[[float(ask[0]), float(ask[1])] for ask in message_data.get('asks', [])],
+                        bids=[(float(bid[0]), float(bid[1])) for bid in message_data.get('bids', [])],
+                        asks=[(float(ask[0]), float(ask[1])) for ask in message_data.get('asks', [])],
                         timestamp=message_data.get('lastUpdateId', int(time.time() * 1000))
                     )
                     
