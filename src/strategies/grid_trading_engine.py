@@ -666,16 +666,19 @@ class GridTradingEngine:
             ticker = await self.exchange_manager.get_24h_ticker(exchange, symbol)
             current_price = ticker.get('last', 0) or ticker.get('close', 0)
 
-            # Get active grid for this symbol
-            grid_key = f"{symbol}_{exchange}"
+            # Get active grid for this symbol - iterate through all grids to find matching symbol
             grid_levels = []
+            matching_grid = None
+            
+            for grid_id, grid_data in self.active_grids.items():
+                if grid_data['config'].symbol == symbol and grid_data['config'].exchange == exchange:
+                    matching_grid = grid_data
+                    break
 
-            if grid_key in self.active_grids:
-                grid = self.active_grids[grid_key]
-
+            if matching_grid:
                 # Generate grid levels from active grid
-                for level in grid['levels']:
-                    if level.buy_order:
+                for level in matching_grid['levels']:
+                    if hasattr(level, 'buy_order') and level.buy_order:
                         order = level.buy_order
                         grid_level = GridLevel(
                             price=level.price,
@@ -692,7 +695,7 @@ class GridTradingEngine:
                         )
                         grid_levels.append(grid_level)
                     
-                    if level.sell_order:
+                    if hasattr(level, 'sell_order') and level.sell_order:
                         order = level.sell_order
                         grid_level = GridLevel(
                             price=level.price,
