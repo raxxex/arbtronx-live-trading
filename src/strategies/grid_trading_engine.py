@@ -29,6 +29,8 @@ class GridOrderStatus(Enum):
     ACTIVE = "active"
     FILLED = "filled"
     CANCELLED = "cancelled"
+    FAILED = "failed"
+    PARTIAL = "partial"
 
 
 @dataclass
@@ -46,10 +48,12 @@ class GridOrder:
     filled_at: Optional[datetime] = None
     filled_price: Optional[float] = None
     profit: float = 0.0
+    exchange_order_id: Optional[str] = None
+    filled_quantity: float = 0.0
 
 
 @dataclass
-class GridLevel:
+class GridLevelBasic:
     level: int
     price: float
     buy_order: Optional[GridOrder] = None
@@ -114,6 +118,7 @@ class GridLevel:
     created_at: float
     status: str  # 'pending', 'partial', 'filled', 'cancelled'
     distance_from_market: float
+    level: int = 0
 
 @dataclass
 class GridVisualization:
@@ -669,35 +674,40 @@ class GridTradingEngine:
                 grid = self.active_grids[grid_key]
 
                 # Generate grid levels from active grid
-                for level_price, order_info in grid.buy_orders.items():
-                    level = GridLevel(
-                        price=level_price,
-                        order_type='buy',
-                        order_id=order_info.get('order_id'),
-                        quantity=order_info.get('quantity', 0),
-                        filled_quantity=order_info.get('filled_quantity', 0),
-                        fill_percentage=order_info.get('filled_quantity', 0) / order_info.get('quantity', 1) * 100,
-                        profit_potential=(current_price - level_price) / level_price * 100,
-                        created_at=order_info.get('created_at', time.time()),
-                        status=order_info.get('status', 'pending'),
-                        distance_from_market=abs(current_price - level_price) / current_price * 100
-                    )
-                    grid_levels.append(level)
-
-                for level_price, order_info in grid.sell_orders.items():
-                    level = GridLevel(
-                        price=level_price,
-                        order_type='sell',
-                        order_id=order_info.get('order_id'),
-                        quantity=order_info.get('quantity', 0),
-                        filled_quantity=order_info.get('filled_quantity', 0),
-                        fill_percentage=order_info.get('filled_quantity', 0) / order_info.get('quantity', 1) * 100,
-                        profit_potential=(level_price - current_price) / current_price * 100,
-                        created_at=order_info.get('created_at', time.time()),
-                        status=order_info.get('status', 'pending'),
-                        distance_from_market=abs(level_price - current_price) / current_price * 100
-                    )
-                    grid_levels.append(level)
+                for level in grid['levels']:
+                    if level.buy_order:
+                        order = level.buy_order
+                        grid_level = GridLevel(
+                            price=level.price,
+                            order_type='buy',
+                            order_id=order.order_id,
+                            quantity=order.amount,
+                            filled_quantity=order.filled_quantity,
+                            fill_percentage=(order.filled_quantity / order.amount * 100) if order.amount > 0 else 0,
+                            profit_potential=(current_price - level.price) / level.price * 100,
+                            created_at=order.created_at.timestamp(),
+                            status=order.status.value,
+                            distance_from_market=abs(current_price - level.price) / current_price * 100,
+                            level=level.level
+                        )
+                        grid_levels.append(grid_level)
+                    
+                    if level.sell_order:
+                        order = level.sell_order
+                        grid_level = GridLevel(
+                            price=level.price,
+                            order_type='sell',
+                            order_id=order.order_id,
+                            quantity=order.amount,
+                            filled_quantity=order.filled_quantity,
+                            fill_percentage=(order.filled_quantity / order.amount * 100) if order.amount > 0 else 0,
+                            profit_potential=(level.price - current_price) / current_price * 100,
+                            created_at=order.created_at.timestamp(),
+                            status=order.status.value,
+                            distance_from_market=abs(level.price - current_price) / current_price * 100,
+                            level=level.level
+                        )
+                        grid_levels.append(grid_level)
 
             # Sort levels by price (highest to lowest)
             grid_levels.sort(key=lambda x: x.price, reverse=True)
@@ -1056,7 +1066,7 @@ class GridTradingEngine:
                 'message': str(e)
             }
     
-    async def _calculate_grid_levels(self, config: GridConfiguration) -> List[GridLevel]:
+    async def _calculate_grid_levels(self, config: GridConfiguration) -> List[GridLevelBasic]:
         """Calculate grid price levels"""
         levels = []
         
@@ -1066,7 +1076,7 @@ class GridTradingEngine:
         # Create levels below center price (buy orders)
         for i in range(1, config.levels_below + 1):
             level_price = config.center_price - (price_increment * i)
-            levels.append(GridLevel(
+            levels.append(GridLevelBasic(
                 level=-i,
                 price=level_price
             ))
@@ -1074,7 +1084,7 @@ class GridTradingEngine:
         # Create levels above center price (sell orders)
         for i in range(1, config.levels_above + 1):
             level_price = config.center_price + (price_increment * i)
-            levels.append(GridLevel(
+            levels.append(GridLevelBasic(
                 level=i,
                 price=level_price
             ))

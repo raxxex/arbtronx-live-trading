@@ -68,7 +68,7 @@ class EnhancedBinanceAPI:
         # Connection management
         self.status = ConnectionStatus()
         self.session: Optional[aiohttp.ClientSession] = None
-        self.ws_connection: Optional[websockets.WebSocketServerProtocol] = None
+        self.ws_connection = None
         
         # Data storage
         self.market_data: Dict[str, MarketData] = {}
@@ -114,7 +114,11 @@ class EnhancedBinanceAPI:
         """Shutdown the API client"""
         try:
             if self.ws_connection:
-                await self.ws_connection.close()
+                try:
+                    if hasattr(self.ws_connection, 'close') and callable(getattr(self.ws_connection, 'close', None)):
+                        self.ws_connection.close()
+                except:
+                    pass
             
             if self.session:
                 await self.session.close()
@@ -145,7 +149,7 @@ class EnhancedBinanceAPI:
         self.request_times.append(now)
         return True
     
-    async def _make_request_with_retry(self, method: str, endpoint: str, params: Dict = None, signed: bool = False) -> Optional[Dict]:
+    async def _make_request_with_retry(self, method: str, endpoint: str, params: Optional[Dict] = None, signed: bool = False) -> Optional[Dict]:
         """Make HTTP request with retry logic"""
         for attempt in range(self.max_retries):
             try:
@@ -168,7 +172,7 @@ class EnhancedBinanceAPI:
         logger.error(f"Request failed after {self.max_retries} attempts")
         return None
     
-    async def _make_request(self, method: str, endpoint: str, params: Dict = None, signed: bool = False) -> Optional[Dict]:
+    async def _make_request(self, method: str, endpoint: str, params: Optional[Dict] = None, signed: bool = False) -> Optional[Dict]:
         """Make HTTP request to Binance API"""
         if not self.session:
             return None
@@ -229,7 +233,7 @@ class EnhancedBinanceAPI:
             self.account_data = result
         return result
     
-    async def get_ticker_24hr(self, symbol: str = None) -> Optional[Dict]:
+    async def get_ticker_24hr(self, symbol: Optional[str] = None) -> Optional[Dict]:
         """Get 24hr ticker data"""
         params = {}
         if symbol:
@@ -289,6 +293,13 @@ class EnhancedBinanceAPI:
                 "total_usdt_value": 0,
                 "data_age": 0
             }
+
+    async def get_balance(self) -> Dict[str, Any]:
+        """Get account balance - compatibility method"""
+        result = await self.get_formatted_balances()
+        if result.get('success'):
+            return result.get('balances', {})
+        return {}
     
     async def get_formatted_market_data(self) -> Dict[str, Any]:
         """Get formatted market data with validation for meme/altcoin pairs"""
